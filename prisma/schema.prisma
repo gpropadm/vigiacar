@@ -1,0 +1,154 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
+  phone         String?
+  plan          String    @default("BASIC")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  vehicles Vehicle[]
+
+  @@map("users")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Vehicle {
+  id          String   @id @default(cuid())
+  name        String
+  plate       String   @unique
+  brand       String?
+  model       String?
+  year        Int?
+  color       String?
+  chassi      String?
+  renavam     String?
+  status      String   @default("ACTIVE")
+  isBlocked   Boolean  @default(false)
+  hasCamera   Boolean  @default(false)
+  userId      String
+  deviceId    String?  @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locations   VehicleLocation[]
+  alerts      Alert[]
+  events      VehicleEvent[]
+
+  @@map("vehicles")
+}
+
+model VehicleLocation {
+  id        String   @id @default(cuid())
+  vehicleId String
+  latitude  Float
+  longitude Float
+  address   String?
+  speed     Float?   @default(0)
+  heading   Float?
+  altitude  Float?
+  accuracy  Float?
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("vehicle_locations")
+}
+
+model Alert {
+  id        String    @id @default(cuid())
+  vehicleId String
+  type      String
+  message   String
+  severity  String    @default("MEDIUM")
+  isRead    Boolean   @default(false)
+  latitude  Float?
+  longitude Float?
+  metadata  String?   // JSON as string
+  createdAt DateTime  @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("alerts")
+}
+
+model VehicleEvent {
+  id        String    @id @default(cuid())
+  vehicleId String
+  type      String
+  data      String?   // JSON as string
+  timestamp DateTime  @default(now())
+  createdAt DateTime  @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("vehicle_events")
+}
+
+model GeofenceZone {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  latitude    Float
+  longitude   Float
+  radius      Float   // em metros
+  isActive    Boolean @default(true)
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("geofence_zones")
+}
