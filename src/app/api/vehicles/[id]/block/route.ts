@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -15,7 +15,7 @@ export async function POST(
     }
 
     const { isBlocked } = await request.json()
-    const vehicleId = params.id
+    const { id: vehicleId } = await params
 
     // Verifica se o veículo pertence ao usuário
     const vehicle = await prisma.vehicle.findFirst({
@@ -43,12 +43,12 @@ export async function POST(
       data: {
         vehicleId,
         type: isBlocked ? 'LOCK_VEHICLE' : 'UNLOCK_VEHICLE',
-        data: {
+        data: JSON.stringify({
           previousState: vehicle.isBlocked,
           newState: isBlocked,
           triggeredBy: session.user.id,
           timestamp: new Date()
-        }
+        })
       }
     })
 

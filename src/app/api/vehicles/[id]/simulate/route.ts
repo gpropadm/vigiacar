@@ -6,7 +6,7 @@ import { GPSSimulator } from '@/lib/gps-simulator'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -16,7 +16,7 @@ export async function POST(
     }
 
     const { action } = await request.json()
-    const vehicleId = params.id
+    const { id: vehicleId } = await params
 
     // Verifica se o veículo pertence ao usuário
     const vehicle = await prisma.vehicle.findFirst({
@@ -61,13 +61,13 @@ export async function POST(
             data: {
               vehicleId,
               type: 'ENGINE_ON',
-              data: {
+              data: JSON.stringify({
                 simulationStarted: true,
                 location: {
                   lat: location.latitude,
                   lng: location.longitude
                 }
-              }
+              })
             }
           })
 
@@ -92,9 +92,9 @@ export async function POST(
         data: {
           vehicleId,
           type: 'ENGINE_OFF',
-          data: {
+          data: JSON.stringify({
             simulationStopped: true
-          }
+          })
         }
       })
     }
